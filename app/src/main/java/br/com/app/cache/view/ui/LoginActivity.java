@@ -55,7 +55,7 @@ public class LoginActivity extends BaseActivity {
                 etPass.getText().toString(), etToken.getText().toString());
         Snackbar snackbar = Snackbar
                 .make(findViewById(android.R.id.content), "Salvo no cache", Snackbar.LENGTH_LONG)
-                .setAction("Limpar cacke", new View.OnClickListener() {
+                .setAction("Limpar cache", new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         mLoginPresenter.clearUser();
