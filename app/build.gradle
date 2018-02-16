@@ -1,0 +1,124 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion 26
+    defaultConfig {
+        applicationId "br.com.app.cache"
+        minSdkVersion 25
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    sourceSets.main {
+        // This prevents the auto generation of Android.mk
+        jni.srcDirs = []
+        // This is not necessary unless you have precompiled libraries in your project.
+        jniLibs.srcDir 'src/libs'
+    }
+
+    task buildNative(type: Exec, description: 'Compile JNI source via NDK') {
+        def ndkDir = android.ndkDirectory
+        commandLine "$ndkDir/ndk-build",
+                '-C', file('src/jni').absolutePath,
+                '-j', Runtime.runtime.availableProcessors(),
+                'all',
+                'NDK_DEBUG=1'
+    }
+
+    task cleanNative(type: Exec, description: 'Clean JNI object files') {
+        def ndkDir = android.ndkDirectory
+        commandLine "$ndkDir/ndk-build",
+                '-C', file('src/jni').absolutePath,
+                'clean'
+    }
+
+    clean.dependsOn 'cleanNative'
+
+    tasks.withType(JavaCompile) {
+        compileTask -> compileTask.dependsOn buildNative
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true  // ProGuard
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    // Specifies two flavor dimensions.
+    flavorDimensions "tier"
+    productFlavors {
+        dev {
+            applicationId "br.com.app.cache.dev"
+            dimension "tier"
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support:design:26.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+
+    implementation 'com.google.code.gson:gson:2.7'
+    implementation 'com.jakewharton:butterknife:8.8.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+    implementation 'com.scottyab:secure-preferences-lib:0.1.4'
+}
+
+task generateDevKeys doLast {
+    def cacheAesKey = "AC9QwU2SreOuQLjTCtfGA6RscFG7hh16"
+    def cacheIvKey = "1g6BaC4140AcA0a4"
+    generateKeys(project.android.productFlavors.dev.applicationId, cacheAesKey, cacheIvKey)
+}
+
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import java.security.MessageDigest
+
+def generateKeys(packageName, cacheAesKey, cacheIvKey) {
+    def cFileContent = file('src/jni/security.c').text
+    def cFileContentSubstring = cFileContent.substring(cFileContent.indexOf('// MARK TO GRADLE'))
+
+    def replaceKey = "#ENCRYPTED_VALUES#"
+
+    def include = '#include <jni.h>\n\n'
+    def methodSignature = 'jstring Java_br_com_app_cache_infrastructure_SecurityBridge_getKeys( JNIEnv* env, jobject thiz, jobject context) {\n\n'
+    def constant = '    jstring VALUE = "' + replaceKey + '";\n\n'
+
+    def versionCode = project.android.defaultConfig.versionCode
+    def versionName = project.android.defaultConfig.versionName
+
+    def aesKey = packageName + ":" + versionCode + ":" + versionName
+
+    def keyBytes = aesKey.getBytes("UTF-8");
+    MessageDigest sha = MessageDigest.getInstance("SHA-1");
+    keyBytes = sha.digest(keyBytes);
+    keyBytes = Arrays.copyOf(keyBytes, 16); // use only first 128 bit
+
+    IvParameterSpec iv = new IvParameterSpec("RandomInitVector".getBytes("UTF-8"));
+    SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, "AES");
+
+    String VALUES_KEY = cacheAesKey + "," + cacheIvKey
+
+    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
+    cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, iv)
+    def encBytes = cipher.doFinal(VALUES_KEY.getBytes("UTF-8"))
+    def encryptedString = new String(encBytes.encodeBase64().toString());
+
+    constant = constant.replace(replaceKey, encryptedString)
+
+    file('src/jni/security.c').text = include + methodSignature + constant + cFileContentSubstring
+}

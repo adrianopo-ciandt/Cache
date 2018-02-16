@@ -1,0 +1,2 @@
+set solib-search-path /Users/adrianopo/Desktop/Cache/app/src/obj/local/mips
+directory /Users/adrianopo/Library/Android/sdk/ndk-bundle/sysroot /Users/adrianopo/Desktop/Cache/app/src/jni /Users/adrianopo/Library/Android/sdk/ndk-bundle/sources/cxx-stl/system
