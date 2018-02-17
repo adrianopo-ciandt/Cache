@@ -14,7 +14,9 @@ pipeline {
         stage('Build Dev') {
             steps {
                 echo "Start - Build Dev"
-                sh "clean && generateDevKeys && assembleDevRelease"
+                sh "./graldew clean"
+                sh "./gradlew generateDevKeys"
+                sh "./gradlew assembleDevRelease"
                 archive(includes: '**/*.apk')
                 echo "End - Build Dev"
             }
