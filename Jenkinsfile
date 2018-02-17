@@ -14,7 +14,7 @@ pipeline {
         stage('Build Dev') {
             steps {
                 echo "Start - Build Dev"
-                sh "/usr/local/bin/fastlane dev"
+                sh "clean && generateDevKeys && assembleDevRelease"
                 archive(includes: '**/*.apk')
                 echo "End - Build Dev"
             }

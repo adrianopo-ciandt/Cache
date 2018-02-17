@@ -88,7 +88,7 @@ lane :dev do
   gradle(task: "assembleDevRelease")
   echo "BUILD SUCCESS"
 
-  generate_tag
+  #generate_tag
 end
 
 lane :get_date_code do
