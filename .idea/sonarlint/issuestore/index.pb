@@ -33,3 +33,7 @@ q
 Aapp/src/main/java/br/com/app/cache/view/ui/base/BaseActivity.java,7/b/7b94f71d0085cb74b46297416ea222fd30d6e202
 m
 =app/src/main/java/br/com/app/cache/view/ui/LoginActivity.java,7/4/74dc635eb76e9b6cb3a5cd89f64aa90404d83129
+F
+app/src/jni/Android.mk,6/e/6e446cd58cd06bbeffb3b8ec05145c843eb21a20
+J
+app/src/jni/Application.mk,a/5/a50f277b1830ceed9027c9c63ce9fa595ad486f8
