@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git "https://github.com/adrianopo-ciandt/Cache"
-                sh "git checkout ${env.BRANCH_NAME}"
+                sh "git branch --set-upstream-to=origin/${env.BRANCH_NAME}"
                 sh "git pull"
 
                 echo "My branch is: ${env.BRANCH_NAME}"
